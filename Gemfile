@@ -110,7 +110,7 @@ gem "faraday", "~> 2.13"
 
 gem "ruby-vips", "~> 2.2"
 
-gem "slack-ruby-client", "~> 2.6"
+gem "slack-ruby-client", "~> 3.0"
 
 gem "redcarpet", "~> 3.6"
 

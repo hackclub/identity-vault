@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_26_211842) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_26_233614) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -408,12 +408,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_26_211842) do
 
   create_table "identity_webauthn_credentials", force: :cascade do |t|
     t.bigint "identity_id", null: false
-    t.string "external_id"
-    t.string "public_key"
+    t.string "external_id", null: false
+    t.string "public_key", null: false
     t.string "nickname"
     t.integer "sign_count"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["external_id"], name: "index_identity_webauthn_credentials_on_external_id", unique: true
     t.index ["identity_id"], name: "index_identity_webauthn_credentials_on_identity_id"
   end
 

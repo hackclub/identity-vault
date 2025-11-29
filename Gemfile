@@ -133,6 +133,8 @@ gem "geocoder", "~> 1.8"
 gem "rotp", "~> 6.3"
 gem "rqrcode", "~> 2.0"
 
+gem "webauthn", "~> 3.1"
+
 gem "bcrypt", "~> 3.1"
 
 gem "rack-attack", "~> 6.7"
@@ -144,5 +146,5 @@ gem "slocks", "~> 0.1.0"
 gem "factory_bot_rails", "~> 6.4"
 
 group :production do
-  gem 'cloudflare-rails'
+  gem "cloudflare-rails"
 end

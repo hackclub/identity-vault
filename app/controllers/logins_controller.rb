@@ -43,8 +43,12 @@ class LoginsController < ApplicationController
             same_site: :lax
         }
 
-        send_v2_login_code(identity, attempt)
-        redirect_to login_attempt_path(id: attempt.to_param), status: :see_other
+        if identity.webauthn_enabled?
+            redirect_to webauthn_login_attempt_path(id: attempt.to_param), status: :see_other
+        else
+            send_v2_login_code(identity, attempt)
+            redirect_to login_attempt_path(id: attempt.to_param), status: :see_other
+        end
     rescue => e
         flash[:error] = e.message
         redirect_to login_path(return_to: @return_to)
@@ -155,6 +159,77 @@ class LoginsController < ApplicationController
         @attempt.update!(authentication_factors: factors)
 
         handle_post_verification_redirect
+    end
+
+    def webauthn
+        render status: :unprocessable_entity
+    end
+
+    def skip_webauthn
+        # the user wants to skip using a passkey, use email code instead
+        send_v2_login_code(@identity, @attempt)
+        redirect_to login_attempt_path(id: @attempt.to_param), status: :see_other
+    end
+
+    def webauthn_options
+        credentials = @identity.webauthn_credentials.pluck(:external_id).map { |id| Base64.urlsafe_decode64(id) }
+
+        options = WebAuthn::Credential.options_for_get(
+            allow: credentials,
+            user_verification: "preferred"
+        )
+
+        session[:webauthn_authentication_challenge] = options.challenge
+
+        render json: options
+    end
+
+    def verify_webauthn
+        flash.clear
+
+        begin
+            credential_data = JSON.parse(params[:credential_data])
+
+            webauthn_credential = WebAuthn::Credential.from_get(credential_data)
+
+            Identity::WebauthnCredential.transaction do
+                credential = @identity.webauthn_credentials.lock.find_by(
+                    external_id: Base64.urlsafe_encode64(webauthn_credential.id, padding: false)
+                )
+
+                unless credential
+                    flash.now[:error] = "Passkey not found"
+                    render :webauthn, status: :unprocessable_entity
+                    return
+                end
+
+                webauthn_credential.verify(
+                    session[:webauthn_authentication_challenge],
+                    public_key: credential.webauthn_public_key,
+                    sign_count: credential.sign_count
+                )
+
+                credential.update!(sign_count: webauthn_credential.sign_count)
+                # "software" passkeys (like the ones from macOS) don't update the sign count,
+                # so we need to touch the record to update the updated_at timestamp
+                credential.touch unless credential.saved_change_to_sign_count?
+            end
+
+            session.delete(:webauthn_authentication_challenge)
+            factors = (@attempt.authentication_factors || {}).dup
+            factors[:webauthn] = true
+            @attempt.update!(authentication_factors: factors)
+
+            handle_post_verification_redirect
+        rescue WebAuthn::Error => e
+            Rails.logger.error "WebAuthn authentication error: #{e.message}"
+            flash.now[:error] = "Passkey verification failed. Please try again or use email code."
+            render :webauthn, status: :unprocessable_entity
+        rescue => e
+            Rails.logger.error "Unexpected WebAuthn error: #{e.message}"
+            flash.now[:error] = "An unexpected error occurred. Please try again."
+            render :webauthn, status: :unprocessable_entity
+        end
     end
 
     private
@@ -315,6 +390,8 @@ class LoginsController < ApplicationController
 
         if available.include?(:totp)
             redirect_to totp_login_attempt_path(id: @attempt.to_param), status: :see_other
+        elsif available.include?(:webauthn)
+            redirect_to webauthn_login_attempt_path(id: @attempt.to_param), status: :see_other
         elsif available.include?(:backup_code)
             redirect_to backup_code_login_attempt_path(id: @attempt.to_param), status: :see_other
         else

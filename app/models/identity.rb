@@ -77,7 +77,7 @@ class Identity < ApplicationRecord
 
   validates :first_name, :last_name, :country, :primary_email, :birthday, presence: true
   validates :primary_email, uniqueness: { conditions: -> { where(deleted_at: nil) } }
-  validates :primary_email, 'valid_email_2/email': { mx: true, disposable: true }
+  validate :validate_primary_email
 
   validates :slack_id, uniqueness: { conditions: -> { where(deleted_at: nil) } }, allow_blank: true
   validates :aadhaar_number, uniqueness: true, allow_blank: true
@@ -285,7 +285,16 @@ class Identity < ApplicationRecord
     sessions.destroy_all
   end
 
-  def age = (Date.today - birthday).days.in_years
+  def self.calculate_age(birthday)
+    today = Date.today
+    age = today.year - birthday.year
+    age -= 1 if today < birthday + age.years
+    age
+  end
+
+  def age
+    self.class.calculate_age(birthday)
+  end
 
   def totp = totps.verified.first
 
@@ -385,6 +394,26 @@ class Identity < ApplicationRecord
     six_years_ago = Date.current - 6.years
     if birthday > six_years_ago
       errors.add(:base, "Are you sure about that birthday?")
+    end
+  end
+
+  def validate_primary_email
+    return unless primary_email.present?
+
+    address = ValidEmail2::Address.new(primary_email)
+
+    unless address.valid?
+      errors.add(:primary_email, I18n.t("errors.attributes.primary_email.invalid_format"))
+      return
+    end
+
+    if address.disposable?
+      errors.add(:primary_email, I18n.t("errors.attributes.primary_email.temporary"))
+      return
+    end
+
+    unless address.valid_mx?
+      errors.add(:primary_email, I18n.t("errors.attributes.primary_email.no_mx_record"))
     end
   end
 end

@@ -3,8 +3,6 @@
   margin: 2rem auto 0;
 }
 
-
-
 .loading-text {
   color: var(--text-muted-strong);
   font-size: 0.95rem;
@@ -254,8 +252,8 @@
     0 2px 8px rgba(0, 0, 0, 0.08),
     0 1px 4px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
-
-  [data-theme="dark"] & {
+  
+  @include dark-mode {
     background: linear-gradient(135deg, rgba(132, 204, 22, 0.15), rgba(132, 204, 22, 0.08));
     border-color: #84cc16;
     box-shadow:
@@ -294,8 +292,8 @@
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
-
-  [data-theme="dark"] & {
+  
+  @include dark-mode {
     background: #84cc16;
     color: #1a1d23;
     box-shadow:
@@ -331,8 +329,7 @@
 .backup-code-method {
   color: #dc2626;
   background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(153, 27, 27, 0.15));
-
-  [data-theme="dark"] & {
+  @include dark-mode {
     color: #fca5a5;
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.25));
     border-color: rgba(239, 68, 68, 0.4);
@@ -372,8 +369,8 @@
   border-radius: $radius-md;
   font-size: 0.9rem;
   line-height: 1.5;
-
-  [data-theme="dark"] & {
+  
+  @include dark-mode {
     background: color-mix(in srgb, #d97706 15%, #1f2937 85%);
     color: #fbbf24;
   }

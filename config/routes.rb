@@ -274,6 +274,10 @@ Rails.application.routes.draw do
   post "/login/:id/totp", to: "logins#verify_totp", as: :verify_totp_login_attempt
   get "/login/:id/backup_code", to: "logins#backup_code", as: :backup_code_login_attempt
   post "/login/:id/backup_code", to: "logins#verify_backup_code", as: :verify_backup_code_login_attempt
+  get "/login/:id/webauthn", to: "logins#webauthn", as: :webauthn_login_attempt
+  post "/login/:id/webauthn/options", to: "logins#webauthn_options", as: :webauthn_options_login_attempt
+  post "/login/:id/webauthn/verify", to: "logins#verify_webauthn", as: :verify_webauthn_login_attempt
+  post "/login/:id/webauthn/skip", to: "logins#skip_webauthn", as: :skip_webauthn_login_attempt
 
   delete "/logout", to: "sessions#logout", as: :logout
 
@@ -297,6 +301,12 @@ Rails.application.routes.draw do
   resources :identity_totps, only: [ :index, :new, :destroy ] do
     member do
       post :verify
+    end
+  end
+
+  resources :identity_webauthn_credentials, only: [ :index, :new, :create, :destroy ] do
+    collection do
+      post :options
     end
   end
 

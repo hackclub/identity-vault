@@ -34,6 +34,7 @@ class Slack::InteractivityController < ActionController::API
 
     head :ok
   end
+    
 
   def set_current_identity
     payload = JSON.parse(params[:payload])
